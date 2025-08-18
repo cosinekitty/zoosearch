@@ -2,7 +2,11 @@
 
 mkdir -pv bin
 echo "Building zoosearch..."
-g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src ../src/zoosearch.cpp || exit 1
+g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src \
+    ../src/zoosearch.cpp \
+    ../src/sapphire_calcparser.cpp \
+    ../src/sapphire_prog_chaos.cpp \
+    || exit 1
 echo "Running zoosearch unit tests..."
 bin/zoosearch test || exit 1
 echo "SUCCESS"

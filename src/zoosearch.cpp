@@ -1,8 +1,10 @@
 #include <cstdio>
 #include <cstring>
+#include "sapphire_prog_chaos.hpp"
 
 
 static int UnitTests();
+static int Test_Rucklidge();
 
 
 int main(int argc, const char *argv[])
@@ -18,8 +20,26 @@ int main(int argc, const char *argv[])
 }
 
 
+static int Test_Rucklidge()
+{
+    Sapphire::ProgOscillator osc(
+        0.01,
+        -3.4423733871317674, 9.699573232290314, 0.006054606899164795,
+        -1, +1,
+        -1, +1,
+        -1, +1,
+        0.15, 0.20, 0.04
+    );
+
+    printf("Test_Rucklidge: PASS\n");
+    return 0;
+}
+
+
+
 static int UnitTests()
 {
+    if (Test_Rucklidge()) return 1;
     printf("UnitTests: PASS\n");
     return 0;
 }
