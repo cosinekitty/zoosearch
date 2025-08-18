@@ -1,0 +1,7 @@
+#!/bin/bash
+
+mkdir -pv bin
+g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src ../src/zoosearch.cpp || exit 1
+bin/zoosearch || exit 1
+echo "SUCCESS"
+exit 0
