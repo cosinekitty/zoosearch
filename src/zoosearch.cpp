@@ -263,10 +263,85 @@ static int Test_Rucklidge()
 }
 
 
+class BruteForceSearch
+{
+protected:
+    Sapphire::ProgOscillator& osc;
+
+public:
+    explicit BruteForceSearch(Sapphire::ProgOscillator& _osc)
+        : osc(_osc)
+        {}
+
+    virtual void visit()
+    {
+        osc.prog.print();
+    }
+
+    void search(int limit, int depth)
+    {
+        using namespace Sapphire;
+
+        const int nreg = static_cast<int>(osc.prog.reg.size());
+        if (depth < limit)
+        {
+            // Generate a random instruction and recurse.
+            // The instruction format is:
+            // r = a*b + c
+            // We need a target register r that is newly allocated.
+            osc.prog.func.push_back(BytecodeInstruction());
+            BytecodeInstruction& inst = osc.prog.func.back();
+            inst.r = osc.prog.allocateRegister();
+            for (inst.a = 0; inst.a < nreg; ++inst.a)
+                for (inst.b = inst.a; inst.b < nreg; ++inst.b)    // avoid redundant b*a after doing a*b
+                    for (inst.c = 0; inst.c < nreg; ++inst.c)
+                        search(limit, 1+depth);
+            osc.prog.reg.pop_back();
+            osc.prog.func.pop_back();
+        }
+        else
+        {
+            // Try every available register as a potential output.
+            osc.prog.outputs.push_back(0);
+            for (int r = 0; r < nreg; ++r)
+            {
+                osc.prog.outputs.back() = r;
+                visit();
+            }
+            osc.prog.outputs.pop_back();
+        }
+    }
+};
+
+
+static int Test_Search()
+{
+    using namespace Sapphire;
+
+    constexpr double x0 = +1.5;
+    constexpr double y0 = -0.5;
+    constexpr double z0 = +0.1;
+
+    ProgOscillator osc(
+        0.005,
+        x0, y0, z0,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        1, 1, 1
+    );
+
+    BruteForceSearch brute(osc);
+    brute.search(1, 0);
+
+    return 0;
+}
+
 
 static int UnitTests()
 {
     if (Test_Rucklidge()) return 1;
+    if (Test_Search()) return 1;
     printf("UnitTests: PASS\n");
     return 0;
 }

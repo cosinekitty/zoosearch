@@ -169,12 +169,24 @@ namespace Sapphire
             }
         }
 
+        void printOutputs() const
+        {
+            printf("    OUTPUTS:\n");
+            int i = 0;
+            for (int r : outputs)
+            {
+                printf("        [%2d] : out_%d\n", r, i);
+                ++i;
+            }
+        }
+
         void print() const
         {
             printf("\n");
             printf("PROGRAM:\n");
             printRegisters();
             printFunc();
+            printOutputs();
             printf("\n");
         }
 
@@ -234,18 +246,6 @@ namespace Sapphire
             return 0 == (exclusiveVarsMask & BytecodeProgram::LowercaseMask(symbol));
         }
 
-    private:
-        int gencode(calc_expr_t expr, int depth);
-
-        int allocateRegister(double value = 0.0)
-        {
-            const int r = static_cast<int>(reg.size());
-            if (r >= MaxRegisterCount)
-                throw CalcError("Ran out of registers (" + std::to_string(MaxRegisterCount) + " max).");
-            reg.push_back(value);
-            return r;
-        }
-
         int literalRegister(double value)
         {
             // Search for a register where this value is already stored.
@@ -257,6 +257,18 @@ namespace Sapphire
             literals.push_back(BytecodeLiteral(r, value));
             return r;
         }
+
+        int allocateRegister(double value = 0.0)
+        {
+            const int r = static_cast<int>(reg.size());
+            if (r >= MaxRegisterCount)
+                throw CalcError("Ran out of registers (" + std::to_string(MaxRegisterCount) + " max).");
+            reg.push_back(value);
+            return r;
+        }
+
+    private:
+        int gencode(calc_expr_t expr, int depth);
 
         int variableRegister(char symbol)
         {
