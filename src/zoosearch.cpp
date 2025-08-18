@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <cstring>
+#include <cassert>
+#include <vector>
 #include "sapphire_prog_chaos.hpp"
 
 
@@ -58,10 +60,101 @@ inline bool IsFixedPoint(double dx, double dy, double dz)
 }
 
 
+template <unsigned xBins, unsigned yBins, unsigned zBins>
+class Hologram
+{
+private:
+    static_assert(xBins > 0 && xBins <= 1024);
+    static_assert(yBins > 0 && yBins <= 1024);
+    static_assert(zBins > 0 && zBins <= 1024);
+
+    static constexpr unsigned nFlatSize = xBins * yBins * zBins;
+
+    std::vector<unsigned> count;
+    double radius = 1;
+
+    unsigned index(double u, unsigned nbins) const
+    {
+        assert(std::isfinite(u));
+        double realIndex = (nbins-1)*((u + radius) / (2*radius));
+        realIndex = std::max<double>(0.0, realIndex);
+        unsigned intIndex = static_cast<unsigned>(std::round(realIndex));
+        return std::min<unsigned>(intIndex, nbins-1);
+    }
+
+    const unsigned& access(double x, double y, double z) const
+    {
+        unsigned i = index(x, xBins);
+        unsigned j = index(y, yBins);
+        unsigned k = index(z, zBins);
+        return count.at(i + xBins*(j + yBins*k));
+    }
+
+    unsigned& access(double x, double y, double z)
+    {
+        return const_cast<unsigned&>(const_cast<const Hologram *>(this)->access(x, y, z));
+    }
+
+public:
+    static constexpr unsigned xBinCount = xBins;
+    static constexpr unsigned yBinCount = yBins;
+    static constexpr unsigned zBinCount = zBins;
+
+    explicit Hologram(double _radius)
+        : radius(_radius)
+    {
+        count.resize(nFlatSize);
+        initialize();
+    }
+
+    void initialize()
+    {
+        for (unsigned& k : count)
+            k = 0;
+    }
+
+    void tally(double x, double y, double z)
+    {
+        ++access(x, y, z);
+    }
+
+    unsigned hits(unsigned i, unsigned j, unsigned k) const
+    {
+        if (i < 0 || i >= xBins) return 0;
+        if (j < 0 || j >= xBins) return 0;
+        if (k < 0 || k >= xBins) return 0;
+        return count.at(i + xBins*(j + yBins*k));
+    }
+};
+
+
+using holo_t = Hologram<40, 40, 40>;
+
+
+static void PrintHolo(const holo_t& holo)
+{
+    for (unsigned j = 0; j < holo_t::yBinCount; ++j)
+    {
+        for (unsigned i = 0; i < holo_t::xBinCount; ++i)
+        {
+            unsigned sum = 0;
+            for (unsigned k = 0; k < holo_t::zBinCount; ++k)
+                sum += holo.hits(i, j, k);
+
+            char c = (sum > 0) ? '@' : ' ';
+            printf("%c", c);
+        }
+        printf("\n");
+    }
+}
+
+
 static Behavior Fly(Sapphire::ProgOscillator& osc)
 {
     try
     {
+        holo_t holo(6.0);
+
         const long SAMPLE_RATE = 44100;
         const long SIM_SECONDS = 300;
         const long SIM_SAMPLES = SIM_SECONDS * SAMPLE_RATE;
@@ -93,6 +186,8 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
             if (IsFixedPoint(px-x, py-y, pz-z))
                 return Behavior::FixedPoint;
 
+            holo.tally(x, y, z);
+
             xMin = std::min(xMin, x);
             xMax = std::max(xMax, x);
             yMin = std::min(yMin, y);
@@ -106,6 +201,9 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
         }
 
         printf("Fly: xrange:[%0.3f, %0.3f], yrange:[%0.3f, %0.3f]\n", xMin, xMax, yMin, yMax);
+
+        PrintHolo(holo);
+
         return Behavior::Stable;
     }
     catch (const Sapphire::CalcError& ex)
