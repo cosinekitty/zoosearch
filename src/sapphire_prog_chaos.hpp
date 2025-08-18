@@ -314,9 +314,9 @@ namespace Sapphire
         static constexpr int ParamCount = 4;        // knobs are 'a', 'b', 'c', 'd'.
         static constexpr int InputCount = 3;        // input variables are 'x', 'y', 'z'.
         KnobParameterMapping knobMap[ProgOscillator::ParamCount];
+        mutable BytecodeProgram prog;       // a single program that calculates vx, vy, and vz.
 
     private:
-        mutable BytecodeProgram prog;       // a single program that calculates vx, vy, and vz.
 
         int paramRegister[ParamCount]{};
         int inputRegister[InputCount]{};
@@ -440,11 +440,6 @@ namespace Sapphire
         bool isBadVariable(char symbol) const
         {
             return prog.isBadVariable(symbol);
-        }
-
-        void print() const
-        {
-            prog.print();
         }
     };
 }

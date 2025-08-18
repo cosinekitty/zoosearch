@@ -85,8 +85,7 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
             const double y = osc.ypos();
             const double z = osc.zpos();
 
-            if (i == 0) osc.print();
-            //printf("x=%0.16f, y=%0.16f, z=%0.16f\n", x, y, z);
+            if (i == 0) osc.prog.print();
 
             if (OutOfBounds(x) || OutOfBounds(y) || OutOfBounds(z))
                 return Behavior::Diverge;
