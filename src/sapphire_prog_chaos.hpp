@@ -395,9 +395,9 @@ namespace Sapphire
         {
             prog.initialize();
 
-            paramRegister[0] = prog.setVar('a', 0.1);
-            paramRegister[1] = prog.setVar('b', 0.1);
-            paramRegister[2] = prog.setVar('c', 14.0);
+            paramRegister[0] = prog.setVar('a', 0.0);
+            paramRegister[1] = prog.setVar('b', 0.0);
+            paramRegister[2] = prog.setVar('c', 0.0);
             paramRegister[3] = prog.setVar('d', 0.0);
 
             inputRegister[0] = prog.setVar('x', x0);
@@ -440,6 +440,11 @@ namespace Sapphire
         bool isBadVariable(char symbol) const
         {
             return prog.isBadVariable(symbol);
+        }
+
+        void print() const
+        {
+            prog.print();
         }
     };
 }
