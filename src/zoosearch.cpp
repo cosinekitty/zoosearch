@@ -5,6 +5,7 @@
 #include "sapphire_prog_chaos.hpp"
 
 
+static int Search();
 static int UnitTests();
 static int Test_Rucklidge();
 
@@ -16,6 +17,9 @@ int main(int argc, const char *argv[])
         const char *verb = argv[1];
         if (0 == strcmp(verb, "test"))
             return UnitTests();
+
+        if (0 == strcmp(verb, "search"))
+            return Search();
     }
     printf("zoosearch: Invalid command line arguments.\n");
     return 1;
@@ -378,12 +382,14 @@ static int Search()
         1, 1, 1
     );
 
-    osc.knobMap[0].center = 1.0;
+    osc.knobMap[0].center = +1.0;
     osc.knobMap[0].spread = 0.9;
-    osc.knobMap[1].center = 1.0;
+    osc.knobMap[1].center = -1.0;
     osc.knobMap[1].spread = 0.9;
-    osc.knobMap[2].center = 1.0;
+    osc.knobMap[2].center = +0.5;
     osc.knobMap[2].spread = 0.9;
+    osc.knobMap[3].center = -0.5;
+    osc.knobMap[3].spread = 0.9;
     osc.setMode(0);
     osc.setKnob(0.0);
 
@@ -403,27 +409,20 @@ static int Search()
             for (const std::string& zPostfix : exprlist)
             {
                 printf("vx[%s], vy[%s], vz[%s]\n", xPostfix.c_str(), yPostfix.c_str(), zPostfix.c_str());
+                fflush(stdout);
 
                 osc.resetProgram();
                 if (CompilePostfix(osc, xPostfix)) return 1;
                 if (CompilePostfix(osc, yPostfix)) return 1;
                 if (CompilePostfix(osc, zPostfix)) return 1;
+
+                Behavior bv = Fly(osc);
+                printf("RESULT: %s\n", BehaviorText(bv));
             }
         }
     }
 
-    if (Compile(osc, "-2*x + a*y - y*z")) return 1;
-    if (Compile(osc, "x")) return 1;
-    if (Compile(osc, "-z + y*y")) return 1;
-
-    Behavior bv = Fly(osc);
-    if (bv != Behavior::Stable)
-    {
-        printf("Test_Rucklidge: incorrect behavior result: %s\n", BehaviorText(bv));
-        return 1;
-    }
-
-    printf("Test_Rucklidge: PASS\n");
+    printf("Search: PASS\n");
     return 0;
 }
 
@@ -432,7 +431,6 @@ static int UnitTests()
 {
     if (Test_Rucklidge()) return 1;
     if (Test_ExpressionEnumerator()) return 1;
-    if (Search()) return 1;
     printf("UnitTests: PASS\n");
     return 0;
 }
