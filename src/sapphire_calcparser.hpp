@@ -309,4 +309,5 @@ namespace Sapphire
     using calc_expr_t = std::shared_ptr<CalcExpr>;
 
     calc_expr_t CalcParseNumericExpression(std::string text);
+    calc_expr_t CalcParseExpressionFromPostfix(std::string text);
 }

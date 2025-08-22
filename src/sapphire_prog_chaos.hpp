@@ -434,6 +434,21 @@ namespace Sapphire
             }
         }
 
+        BytecodeResult compilePostfix(std::string postfix)
+        {
+            try
+            {
+                auto expr = CalcParseExpressionFromPostfix(postfix);
+                prog.compile(expr);
+                prog.validate();
+                return BytecodeResult::Success(prog);
+            }
+            catch (const CalcError& ex)
+            {
+                return BytecodeResult::Fail(ex.what());
+            }
+        }
+
         double paramValue(int index) const
         {
             return prog.reg.at(paramRegister[ValidateParamIndex(index)]);

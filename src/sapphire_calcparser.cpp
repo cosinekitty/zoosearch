@@ -138,4 +138,41 @@ namespace Sapphire
         parser.finalize();
         return expr;
     }
+
+    calc_expr_t CalcParseExpressionFromPostfix(std::string text)
+    {
+        std::vector<calc_expr_t> stack;
+
+        const int n = static_cast<int>(text.size());
+        for (int i = 0; i < n; ++i)
+        {
+            const char c = text.at(i);
+            CalcToken token(std::string{c}, -1);
+            auto node = std::make_shared<CalcExpr>(token);
+            if (c >= 'a' && c <= 'z')
+            {
+                stack.push_back(node);
+            }
+            else    // operator node
+            {
+                if (stack.size() < 2)
+                    throw ParseError(std::string("Stack underflow"), token);
+
+                calc_expr_t rightChild = stack.back();
+                stack.pop_back();
+                calc_expr_t leftChild = stack.back();
+                stack.pop_back();
+
+                node->children.push_back(leftChild);
+                node->children.push_back(rightChild);
+
+                stack.push_back(node);
+            }
+        }
+
+        if (stack.size() != 1)
+            throw CalcError("Invalid postfix result stack size = " + std::to_string(static_cast<int>(stack.size())));
+
+        return stack[0];
+    }
 }

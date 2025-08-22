@@ -219,7 +219,19 @@ static int Compile(Sapphire::ProgOscillator& osc, std::string infix)
     Sapphire::BytecodeResult result = osc.compile(infix);
     if (result.failure())
     {
-        printf("Compile failure [%s]: %s\n", infix.c_str(), result.message.c_str());
+        printf("Infix compile failure [%s]: %s\n", infix.c_str(), result.message.c_str());
+        return 1;
+    }
+    return 0;
+}
+
+
+static int CompilePostfix(Sapphire::ProgOscillator& osc, std::string postfix)
+{
+    Sapphire::BytecodeResult result = osc.compilePostfix(postfix);
+    if (result.failure())
+    {
+        printf("Postfix compile failure [%s]: %s\n", postfix.c_str(), result.message.c_str());
         return 1;
     }
     return 0;
@@ -330,12 +342,12 @@ static int Test_ExpressionEnumerator()
         return 1;
     }
 
-    ExpressionEnumerator e("abxy");
+    ExpressionEnumerator ee("abxy");
 
     for (int opcount = 0; opcount < ExpressionEnumerator::CACHESIZE; ++opcount)
     {
         fprintf(outfile, "opcount=%d\n", opcount);
-        const string_list_t& list = e.postfixExpressions(opcount);
+        const string_list_t& list = ee.postfixExpressions(opcount);
         for (const std::string& s : list)
             fprintf(outfile, "    %s\n", s.c_str());
         fprintf(outfile, "\n");
@@ -347,10 +359,80 @@ static int Test_ExpressionEnumerator()
 }
 
 
+static int Search()
+{
+    using namespace Sapphire;
+
+    ExpressionEnumerator ee("abcdxyz");
+
+    constexpr double x0 = +1.1;
+    constexpr double y0 = -0.5;
+    constexpr double z0 = +0.1;
+
+    ProgOscillator osc(
+        0.005,
+        x0, y0, z0,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
+        1, 1, 1
+    );
+
+    osc.knobMap[0].center = 1.0;
+    osc.knobMap[0].spread = 0.9;
+    osc.knobMap[1].center = 1.0;
+    osc.knobMap[1].spread = 0.9;
+    osc.knobMap[2].center = 1.0;
+    osc.knobMap[2].spread = 0.9;
+    osc.setMode(0);
+    osc.setKnob(0.0);
+
+    string_list_t exprlist;
+    for (int opcount = 0; opcount < ExpressionEnumerator::CACHESIZE; ++opcount)
+    {
+        const string_list_t& list = ee.postfixExpressions(opcount);
+        for (const std::string& postfix : list)
+            exprlist.push_back(postfix);
+    }
+    printf("Search: expression list length = %d\n", static_cast<int>(exprlist.size()));
+
+    for (const std::string& xPostfix : exprlist)
+    {
+        for (const std::string& yPostfix : exprlist)
+        {
+            for (const std::string& zPostfix : exprlist)
+            {
+                printf("vx[%s], vy[%s], vz[%s]\n", xPostfix.c_str(), yPostfix.c_str(), zPostfix.c_str());
+
+                osc.resetProgram();
+                if (CompilePostfix(osc, xPostfix)) return 1;
+                if (CompilePostfix(osc, yPostfix)) return 1;
+                if (CompilePostfix(osc, zPostfix)) return 1;
+            }
+        }
+    }
+
+    if (Compile(osc, "-2*x + a*y - y*z")) return 1;
+    if (Compile(osc, "x")) return 1;
+    if (Compile(osc, "-z + y*y")) return 1;
+
+    Behavior bv = Fly(osc);
+    if (bv != Behavior::Stable)
+    {
+        printf("Test_Rucklidge: incorrect behavior result: %s\n", BehaviorText(bv));
+        return 1;
+    }
+
+    printf("Test_Rucklidge: PASS\n");
+    return 0;
+}
+
+
 static int UnitTests()
 {
     if (Test_Rucklidge()) return 1;
     if (Test_ExpressionEnumerator()) return 1;
+    if (Search()) return 1;
     printf("UnitTests: PASS\n");
     return 0;
 }
