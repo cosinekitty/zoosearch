@@ -3,7 +3,7 @@
 import sys
 from typing import Generator
 
-Vars = 'axyz'
+Vars = 'abcdxyz'
 
 def PostfixExpressions(opcount:int) -> Generator[str, None, None]:
     if opcount == 0:
@@ -26,5 +26,6 @@ if __name__ == '__main__':
         print('USAGE: expressions.py opcount')
         sys.exit(1)
     opcount = int(sys.argv[1])
-    print('\n'.join(PostfixExpressions(opcount)))
+    for expr in PostfixExpressions(opcount):
+        print(expr)
     sys.exit(0)

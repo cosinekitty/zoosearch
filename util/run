@@ -9,5 +9,6 @@ g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src \
     || exit 1
 echo "Running zoosearch unit tests..."
 bin/zoosearch test || exit 1
+diff {output,correct}/expressions.txt || exit 1
 echo "SUCCESS"
 exit 0

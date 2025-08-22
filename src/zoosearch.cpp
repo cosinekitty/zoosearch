@@ -263,77 +263,86 @@ static int Test_Rucklidge()
 }
 
 
-class BruteForceSearch
+using string_list_t = std::vector<std::string>;
+
+
+class ExpressionEnumerator
 {
-protected:
-    Sapphire::ProgOscillator& osc;
-
 public:
-    explicit BruteForceSearch(Sapphire::ProgOscillator& _osc)
-        : osc(_osc)
-        {}
+    static constexpr int CACHESIZE = 3;
 
-    virtual void visit()
+private:
+    string_list_t cache[CACHESIZE];
+    const string_list_t emptyList;
+
+    static string_list_t makeVars(const char *varlist)
     {
-        osc.prog.print();
+        string_list_t vlist;
+        if (varlist)
+            for (int i = 0; varlist[i]; ++i)
+                vlist.push_back(std::string{varlist[i]});
+        return vlist;
     }
 
-    void search(int limit, int depth)
+public:
+    explicit ExpressionEnumerator(const char* varlist)
     {
-        using namespace Sapphire;
+        cache[0] = makeVars(varlist);
+    }
 
-        const int nreg = static_cast<int>(osc.prog.reg.size());
-        if (depth < limit)
+    const string_list_t& postfixExpressions(int opcount)
+    {
+        if (opcount >= 0 && opcount < CACHESIZE)
         {
-            // Generate a random instruction and recurse.
-            // The instruction format is:
-            // r = a*b + c
-            // We need a target register r that is newly allocated.
-            osc.prog.func.push_back(BytecodeInstruction());
-            BytecodeInstruction& inst = osc.prog.func.back();
-            inst.r = osc.prog.allocateRegister();
-            for (inst.a = 0; inst.a < nreg; ++inst.a)
-                for (inst.b = inst.a; inst.b < nreg; ++inst.b)    // avoid redundant b*a after doing a*b
-                    for (inst.c = 0; inst.c < nreg; ++inst.c)
-                        search(limit, 1+depth);
-            osc.prog.reg.pop_back();
-            osc.prog.func.pop_back();
-        }
-        else
-        {
-            // Try every available register as a potential output.
-            osc.prog.outputs.push_back(0);
-            for (int r = 0; r < nreg; ++r)
+            if (cache[opcount].size() == 0)
             {
-                osc.prog.outputs.back() = r;
-                visit();
+                for (int leftCount = 0; leftCount < opcount; ++leftCount)
+                {
+                    int rightCount = (opcount-1) - leftCount;
+                    for (const std::string& u : postfixExpressions(leftCount))
+                    {
+                        for (const std::string& v : postfixExpressions(rightCount))
+                        {
+                            if (u != v)
+                                cache[opcount].push_back(u + v + "-");
+                            if (u < v)
+                                cache[opcount].push_back(u + v + "+");
+                            if (u <= v)
+                                cache[opcount].push_back(u + v + "*");
+                        }
+                    }
+                }
             }
-            osc.prog.outputs.pop_back();
+            return cache[opcount];
         }
+        return emptyList;
     }
 };
 
 
-static int Test_Search()
+static int Test_ExpressionEnumerator()
 {
-    using namespace Sapphire;
+    const char *outFileName = "output/expressions.txt";
+    FILE *outfile = fopen(outFileName, "wt");
+    if (!outfile)
+    {
+        printf("Test_ExpressionEnumerator: Cannot open file for output: %s\n", outFileName);
+        return 1;
+    }
 
-    constexpr double x0 = +1.5;
-    constexpr double y0 = -0.5;
-    constexpr double z0 = +0.1;
+    ExpressionEnumerator e("abxy");
 
-    ProgOscillator osc(
-        0.005,
-        x0, y0, z0,
-        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
-        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
-        -CHAOS_AMPLITUDE, +CHAOS_AMPLITUDE,
-        1, 1, 1
-    );
+    for (int opcount = 0; opcount < ExpressionEnumerator::CACHESIZE; ++opcount)
+    {
+        fprintf(outfile, "opcount=%d\n", opcount);
+        const string_list_t& list = e.postfixExpressions(opcount);
+        for (const std::string& s : list)
+            fprintf(outfile, "    %s\n", s.c_str());
+        fprintf(outfile, "\n");
+    }
 
-    BruteForceSearch brute(osc);
-    brute.search(1, 0);
-
+    fclose(outfile);
+    printf("Test_ExpressionEnumerator: PASS\n");
     return 0;
 }
 
@@ -341,7 +350,7 @@ static int Test_Search()
 static int UnitTests()
 {
     if (Test_Rucklidge()) return 1;
-    if (Test_Search()) return 1;
+    if (Test_ExpressionEnumerator()) return 1;
     printf("UnitTests: PASS\n");
     return 0;
 }
