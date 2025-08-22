@@ -393,7 +393,7 @@ static int Search()
         1, 1, 1
     );
 
-    osc.knobMap[0].center = +1.0;
+    osc.knobMap[0].center = 5.25;
     osc.knobMap[0].spread = 0.9;
     osc.knobMap[1].center = -1.0;
     osc.knobMap[1].spread = 0.9;
@@ -403,9 +403,22 @@ static int Search()
     osc.knobMap[3].spread = 0.9;
     osc.setMode(0);
     osc.setKnob(0.0);
+    osc.setState(ChaoticOscillatorState(0.788174, 0.522280, 1.250344));
 
     string_list_t exprlist;
     int rejectCount = 0;
+
+#if 1
+    std::string vx = "xx-x-x-ay*+yz*-";
+    std::string vy = "x";
+    std::string vz = "yy*z-";
+    assert(IsCandidateFunction(vx));
+    assert(IsCandidateFunction(vy));
+    assert(IsCandidateFunction(vz));
+    exprlist.push_back(vx);
+    exprlist.push_back(vy);
+    exprlist.push_back(vz);
+#else
     for (int opcount = 0; opcount <= 1; ++opcount)
     {
         const string_list_t& list = ee.postfixExpressions(opcount);
@@ -415,36 +428,37 @@ static int Search()
             else
                 ++rejectCount;
     }
+#endif
     printf("Search: expression list length = %d, rejected %d\n", static_cast<int>(exprlist.size()), rejectCount);
 
     for (const std::string& xPostfix : exprlist)
     {
+        if (xPostfix == "x") continue;      // skip impossible convergence situation
         for (const std::string& yPostfix : exprlist)
         {
+            if (yPostfix == "y") continue;      // skip impossible convergence situation
             for (const std::string& zPostfix : exprlist)
             {
+                if (zPostfix == "z") continue;      // skip impossible convergence situation
                 printf("vx[%s], vy[%s], vz[%s]\n", xPostfix.c_str(), yPostfix.c_str(), zPostfix.c_str());
-                fflush(stdout);
 
                 osc.resetProgram();
                 if (CompilePostfix(osc, xPostfix)) return 1;
                 if (CompilePostfix(osc, yPostfix)) return 1;
                 if (CompilePostfix(osc, zPostfix)) return 1;
 
-                //printf("Program before running:\n");
-                //osc.prog.print();
+                osc.setState(ChaoticOscillatorState(0.788174, 0.522280, 1.250344));
                 Behavior bv = Fly(osc);
                 if (bv != Behavior::Diverge)
                 {
                     printf("RESULT: %s\n", BehaviorText(bv));
                     osc.prog.print();
-                    goto done;
+                    printf("\n");
                 }
             }
         }
     }
 
-done:
     printf("Search: PASS\n");
     return 0;
 }
