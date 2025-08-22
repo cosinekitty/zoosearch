@@ -182,8 +182,6 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
             const double y = osc.ypos();
             const double z = osc.zpos();
 
-            if (i == 0) osc.prog.print();
-
             if (OutOfBounds(x) || OutOfBounds(y) || OutOfBounds(z))
                 return Behavior::Diverge;
 
@@ -205,9 +203,7 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
         }
 
         printf("Fly: xrange:[%0.3f, %0.3f], yrange:[%0.3f, %0.3f]\n", xMin, xMax, yMin, yMax);
-
         PrintHolo(holo);
-
         return Behavior::Stable;
     }
     catch (const Sapphire::CalcError& ex)
@@ -268,6 +264,7 @@ static int Test_Rucklidge()
     if (Compile(osc, "-z + y*y")) return 1;
 
     Behavior bv = Fly(osc);
+    osc.prog.print();
     if (bv != Behavior::Stable)
     {
         printf("Test_Rucklidge: incorrect behavior result: %s\n", BehaviorText(bv));
@@ -363,15 +360,29 @@ static int Test_ExpressionEnumerator()
 }
 
 
+static bool IsCandidateFunction(const std::string& postfix)
+{
+    // It does not make sense to have a function like vx = a+b,
+    // because that is inherently unstable (assuming a+b != 0).
+    // Exclude any function that does not contain at least one reference
+    // to a variable: 'xyz'.
+    for (char c : postfix)
+        if (c >= 'x' && c <= 'z')
+            return true;
+
+    return false;
+}
+
+
 static int Search()
 {
     using namespace Sapphire;
 
     ExpressionEnumerator ee("abcdxyz");
 
-    constexpr double x0 = +1.1;
-    constexpr double y0 = -0.5;
-    constexpr double z0 = +0.1;
+    constexpr double x0 = +0.123;
+    constexpr double y0 = -0.157;
+    constexpr double z0 = +0.109;
 
     ProgOscillator osc(
         0.005,
@@ -394,13 +405,17 @@ static int Search()
     osc.setKnob(0.0);
 
     string_list_t exprlist;
+    int rejectCount = 0;
     for (int opcount = 0; opcount < ExpressionEnumerator::CACHESIZE; ++opcount)
     {
         const string_list_t& list = ee.postfixExpressions(opcount);
         for (const std::string& postfix : list)
-            exprlist.push_back(postfix);
+            if (IsCandidateFunction(postfix))
+                exprlist.push_back(postfix);
+            else
+                ++rejectCount;
     }
-    printf("Search: expression list length = %d\n", static_cast<int>(exprlist.size()));
+    printf("Search: expression list length = %d, rejected %d\n", static_cast<int>(exprlist.size()), rejectCount);
 
     for (const std::string& xPostfix : exprlist)
     {
@@ -416,8 +431,11 @@ static int Search()
                 if (CompilePostfix(osc, yPostfix)) return 1;
                 if (CompilePostfix(osc, zPostfix)) return 1;
 
+                //printf("Program before running:\n");
+                //osc.prog.print();
                 Behavior bv = Fly(osc);
                 printf("RESULT: %s\n", BehaviorText(bv));
+                osc.prog.print();
             }
         }
     }
