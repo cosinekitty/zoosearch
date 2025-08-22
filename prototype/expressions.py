@@ -3,26 +3,28 @@
 import sys
 from typing import Generator
 
-Vars = 'abcdxyz'
-NumVars = len(Vars)
+Vars = 'axyz'
 
-def PostfixExpressions(exactOperatorCount:int) -> Generator[str, None, None]:
-    if exactOperatorCount == 0:
-        for u in 'abcdxyz':
+def PostfixExpressions(opcount:int) -> Generator[str, None, None]:
+    if opcount == 0:
+        for u in Vars:
             yield u
-        return
-
-    if exactOperatorCount == 1:
-        for u in 'abcdxyz':
-            for v in 'abcdxyz':
-                if u < v:
-                    yield u + v + '-'
-                    yield v + u + '-'
-                    yield u + v + '+'
-                    yield u + v + '*'
-        return
+    elif opcount > 0:
+        for leftCount in range(opcount):
+            rightCount = (opcount-1) - leftCount
+            for u in PostfixExpressions(leftCount):
+                for v in PostfixExpressions(rightCount):
+                    if u != v:
+                        yield u + v + '-'
+                    if u < v:
+                        yield u + v + '+'
+                    if u <= v:
+                        yield u + v + '*'
 
 if __name__ == '__main__':
-    print(', '.join(PostfixExpressions(0)))
-    print(', '.join(PostfixExpressions(1)))
+    if len(sys.argv) != 2:
+        print('USAGE: expressions.py opcount')
+        sys.exit(1)
+    opcount = int(sys.argv[1])
+    print('\n'.join(PostfixExpressions(opcount)))
     sys.exit(0)
