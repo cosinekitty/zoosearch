@@ -406,7 +406,7 @@ static int Search()
 
     string_list_t exprlist;
     int rejectCount = 0;
-    for (int opcount = 0; opcount < ExpressionEnumerator::CACHESIZE; ++opcount)
+    for (int opcount = 0; opcount <= 1; ++opcount)
     {
         const string_list_t& list = ee.postfixExpressions(opcount);
         for (const std::string& postfix : list)
