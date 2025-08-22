@@ -434,12 +434,17 @@ static int Search()
                 //printf("Program before running:\n");
                 //osc.prog.print();
                 Behavior bv = Fly(osc);
-                printf("RESULT: %s\n", BehaviorText(bv));
-                osc.prog.print();
+                if (bv != Behavior::Diverge)
+                {
+                    printf("RESULT: %s\n", BehaviorText(bv));
+                    osc.prog.print();
+                    goto done;
+                }
             }
         }
     }
 
+done:
     printf("Search: PASS\n");
     return 0;
 }
