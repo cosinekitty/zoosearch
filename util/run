@@ -1,5 +1,5 @@
 #!/bin/bash
-
+rm -f output/*.txt
 mkdir -pv bin
 echo "Building zoosearch..."
 g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src \
@@ -9,7 +9,8 @@ g++ -std=c++17 -Wall -Werror -o bin/zoosearch -I../src \
     || exit 1
 echo "Running zoosearch unit tests..."
 bin/zoosearch test || exit 1
-bin/zoosearch search || exit 1
+echo "Searching for attractors..."
+bin/zoosearch search > output/search.txt || exit 1
 diff {output,correct}/expressions.txt || exit 1
 echo "SUCCESS"
 exit 0

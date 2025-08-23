@@ -202,7 +202,7 @@ static Behavior Fly(Sapphire::ProgOscillator& osc)
             pz = z;
         }
 
-        printf("Fly: xrange:[%0.3f, %0.3f], yrange:[%0.3f, %0.3f]\n", xMin, xMax, yMin, yMax);
+        printf("\nFly: xrange:[%0.3f, %0.3f], yrange:[%0.3f, %0.3f]\n", xMin, xMax, yMin, yMax);
         PrintHolo(holo);
         return Behavior::Stable;
     }
@@ -393,7 +393,7 @@ static int Search()
         1, 1, 1
     );
 
-    osc.knobMap[0].center = 5.25;
+    osc.knobMap[0].center = +1.0;
     osc.knobMap[0].spread = 0.9;
     osc.knobMap[1].center = -1.0;
     osc.knobMap[1].spread = 0.9;
@@ -408,18 +408,7 @@ static int Search()
     string_list_t exprlist;
     int rejectCount = 0;
 
-#if 1
-    std::string vx = "xx-x-x-ay*+yz*-";
-    std::string vy = "x";
-    std::string vz = "yy*z-";
-    assert(IsCandidateFunction(vx));
-    assert(IsCandidateFunction(vy));
-    assert(IsCandidateFunction(vz));
-    exprlist.push_back(vx);
-    exprlist.push_back(vy);
-    exprlist.push_back(vz);
-#else
-    for (int opcount = 0; opcount <= 1; ++opcount)
+    for (int opcount = 0; opcount <= 2; ++opcount)
     {
         const string_list_t& list = ee.postfixExpressions(opcount);
         for (const std::string& postfix : list)
@@ -428,7 +417,7 @@ static int Search()
             else
                 ++rejectCount;
     }
-#endif
+
     printf("Search: expression list length = %d, rejected %d\n", static_cast<int>(exprlist.size()), rejectCount);
 
     for (const std::string& xPostfix : exprlist)
@@ -440,7 +429,6 @@ static int Search()
             for (const std::string& zPostfix : exprlist)
             {
                 if (zPostfix == "z") continue;      // skip impossible convergence situation
-                printf("vx[%s], vy[%s], vz[%s]\n", xPostfix.c_str(), yPostfix.c_str(), zPostfix.c_str());
 
                 osc.resetProgram();
                 if (CompilePostfix(osc, xPostfix)) return 1;
@@ -449,17 +437,20 @@ static int Search()
 
                 osc.setState(ChaoticOscillatorState(0.788174, 0.522280, 1.250344));
                 Behavior bv = Fly(osc);
+                printf("vx[%s], vy[%s], vz[%s]\n", xPostfix.c_str(), yPostfix.c_str(), zPostfix.c_str());
+                fflush(stdout);
                 if (bv != Behavior::Diverge)
                 {
-                    printf("RESULT: %s\n", BehaviorText(bv));
+                    printf("\nRESULT: %s\n", BehaviorText(bv));
                     osc.prog.print();
                     printf("\n");
+                    fflush(stdout);
                 }
             }
         }
     }
 
-    printf("Search: PASS\n");
+    printf("\nSearch: PASS\n");
     return 0;
 }
 
